@@ -1,0 +1,102 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+
+  <h2>{{ listing.title }}</h2>
+
+  {% if listing.image_url %}
+    <img src="{{ listing.image_url }}" alt="{{ listing_title }}" style="max-width:400px"><br>
+  {% endif %}
+
+  <p>{{ listing.description }}</p>
+  <p><strong>Category:</strong> {{ listing.get_category_display }}</p>
+  <p><strong>Current Price:</strong> ${{ current_price }}</p>
+  <p><strong>Listed by:</strong> {{ listing.creator }}</p>
+
+  {% if not listing.active %}
+    <p style="color:green"><strong>Auction closed.</strong>
+
+    {% if listing.winner %}
+      Winner: {{ listing.winner }}
+    {% endif %}
+
+    </p>  
+  {% endif %}
+
+  {% if error %}
+    <p style="color:red">{{ error }}</p>
+  {% endif %}
+
+  <!-- WATCHLIST -->
+  {% if user.is_authenticated %}
+
+    <form method="post" action="{% url 'toggle_watchlist' listing.id %}">
+
+      {% csrf_token %}
+
+      {% if listing in user.watchlist.all %}
+        <button type="submit">Remove from Watchlist</button>
+      {% else %}
+        <button type="submit">Add to Watchlist</button>
+      {% endif %}
+
+    </form>
+    
+  {% endif %}
+
+  <!-- BID -->
+  {% if listing.active and user.is_authenticated %}
+    <h3>Place a Bid</h3>
+
+    <form method="post" action="{% url 'place_bid' listing.id %}">
+
+      {% csrf_token %}
+      <input type="number" name="amount" step="0.01"
+        placeholder="Min: ${{ current_price }}" required>
+      <button type="submit">Bid</button>
+
+    </form>
+     
+  {% endif %}
+
+  <!-- CLOSE AUCTION -->
+  {% if listing.active and user == listing.creator %}
+
+    <form method="post" action="{% url 'close_auction' listing.id %}">
+
+      {% csrf_token %}
+      <button type="submit">Close Auction</button>
+      
+    </form>
+    
+  {% endif %}
+
+  <!-- COMMENTS -->
+  <h3>Comments</h3>
+
+  {% if user.is_authenticated %}
+  
+    <form method="post" action="{% url 'add_comment' listing.id %}">
+
+      {% csrf_token %}
+      <textarea name="text" placeholder="Write a comment..." required></textarea>
+      <button type="submit">Post</button>
+      
+    </form>
+    
+  {% endif %}
+
+  {% for comment in listing.comments.all %}
+
+    <div>
+      <strong>{{ comment.author }}</strong>
+      <span style="color:gray; font-size:0.85em">{{ comment.created_at|date:"M d, Y" }}</span>
+      <p>{{ comment.text }}</p>
+    </div>
+    
+  {% empty %}
+    <p>No comment yet.</p>
+    
+  {% endfor %}  
+  
+{% endblock %}
